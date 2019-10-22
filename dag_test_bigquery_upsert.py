@@ -19,20 +19,10 @@ global_config = Variable.get("global_variable_dumping", deserialize_json = True)
 local_config = Variable.get("test-bigquery-upsert", deserialize_json=True)   
 default_args_config = local_config["default_args"]
 
-# path
-name_report = local_config["name_report"]
-filename = '{}_{:%Y-%m-%d}'.format(name_report , dt)
-# csv_path = '/home/airflow/gcs/dags/{}'.format(filename)
-# dst_pathfilename = '{}/{}/{}/{}_{:%Y-%m-%d}'.format(global_config["dumping"], 
-#                                         local_config["department"], 
-#                                         local_config["name_report"], 
-#                                         local_config["name_report"], dt)
-# link_bucket = '{}/{}/{}'.format(local_config["link_bucket"], global_config["bucket"], dst_pathfilename)
-
 def cek_fail_safe_and_set_last_sync():
     local_config = Variable.get("test-bigquery-upsert", deserialize_json=True)   
     if local_config["fail_safe"] == 1:
-        local_config["extract_date"] = '1900-00-00 00:00:00'
+        local_config["extract_date"] = '1900-00-00 00:00:00.000000'
         local_config["last_sync"] = str(dt)
         local_config = json.dumps(local_config)
         Variable.set("test-bigquery-upsert", local_config)
@@ -146,7 +136,7 @@ bq_load_to_staging_table = GoogleCloudStorageToBigQueryOperator(
     task_id=local_config["task"][3]["task_id"],
     bucket=global_config["bucket"],
     # pakai local config untuk filesource
-    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(dt)],
+    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(datetime.strptime(local_config["last_sync"], "%Y-%m-%d %H:%M:%S.%f"))],
     destination_project_dataset_table="{}:{}.{}".format(local_config["bq_destination"], local_config["bq_dataset_staging"], local_config["bq_table_staging"]),
     schema_fields=local_config["task"][3]["schema_fields"],
     schema_object=local_config["task"][3]["schema_object"],  # Relative gcs path to schema file.
@@ -164,7 +154,7 @@ bq_load_to_primary_table = GoogleCloudStorageToBigQueryOperator(
     task_id=local_config["task"][4]["task_id"],
     bucket=global_config["bucket"],
     # pakai local config untuk filesource
-    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(dt)],
+    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(datetime.strptime(local_config["last_sync"], "%Y-%m-%d %H:%M:%S.%f"))],
     destination_project_dataset_table="{}:{}.{}".format(local_config["bq_destination"], local_config["bq_dataset_primary"], local_config["bq_table_primary"]),
     schema_fields=local_config["task"][4]["schema_fields"],
     schema_object=local_config["task"][4]["schema_object"],  # Relative gcs path to schema file.
@@ -182,7 +172,7 @@ bq_load_to_primary_table_if_fail_save = GoogleCloudStorageToBigQueryOperator(
     task_id=local_config["task"][5]["task_id"],
     bucket=global_config["bucket"],
     # pakai local config untuk filesource
-    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(dt)],
+    source_objects=["dump_report/data/bigquery_upsert_test/bigquery_upsert_dump_{:%Y-%m-%d}/*.csv".format(datetime.strptime(local_config["last_sync"], "%Y-%m-%d %H:%M:%S.%f"))],
     destination_project_dataset_table="{}:{}.{}".format(local_config["bq_destination"], local_config["bq_dataset_primary"], local_config["bq_table_primary"]),
     schema_fields=local_config["task"][5]["schema_fields"],
     schema_object=local_config["task"][5]["schema_object"],  # Relative gcs path to schema file.
